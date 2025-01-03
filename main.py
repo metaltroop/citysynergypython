@@ -5,6 +5,9 @@ from datetime import datetime, date
 import logging
 
 app = FastAPI()
+@app.get("/")
+def root():
+    return {"message": "FastAPI service is running!"}
 
 logging.basicConfig(level=logging.DEBUG)
 
