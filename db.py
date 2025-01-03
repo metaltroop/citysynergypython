@@ -27,7 +27,7 @@ def fetch_tenders_by_pincode(pincode: str) -> List[Dict[str, Union[str, int]]]:
         connection = get_db_connection()
         cursor = connection.cursor(dictionary=True)
         query = """
-            SELECT Tender_ID, pincode, area_name, local_area_name, department, Sanction_Date, Completion_Date 
+            SELECT Tender_ID, pincode, area_name, local_area_name, Tender_By_Department, Sanction_Date, Completion_Date 
             FROM tendernew
             WHERE pincode = %s
         """
