@@ -58,10 +58,10 @@ async def check_clashes(request: PincodeRequest):
                                     priority_issue=priority_issue,
                                     department=tender["Tender_By_Department"],
                                     clashing_department=other_tender["Tender_By_Department"],
-                                    tender_start_date=tender["Sanction_Date"],
-                                    tender_end_date=tender["Completion_Date"],
-                                    clashing_tender_start_date=other_tender["Sanction_Date"],
-                                    clashing_tender_end_date=other_tender["Completion_Date"]
+                                    tender_start_date=tender["Sanction_Date"].isoformat(),
+                                    tender_end_date=tender["Completion_Date"].isoformat(),
+                                    clashing_tender_start_date=other_tender["Sanction_Date"].isoformat(),
+                                    clashing_tender_end_date=other_tender["Completion_Date"].isoformat()
                                 ))
 
         logging.debug(f"Detected clashes with priority issues: {clashes}")
