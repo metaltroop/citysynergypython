@@ -27,6 +27,7 @@ def is_priority_issue(dept1, dept2):
     return priority_order.index(dept1) > priority_order.index(dept2)
 
 @app.post("/check_clashes", response_model=ClashResponse)
+@app.post("/check_clashes", response_model=ClashResponse)
 async def check_clashes(request: PincodeRequest):
     try:
         logging.debug(f"Received request for pincode: {request.pincode}")
@@ -34,9 +35,11 @@ async def check_clashes(request: PincodeRequest):
         logging.debug(f"Fetched tenders: {tenders}")
 
         clashes = []
+        # Iterate through each pair of tenders to find clashes
         for tender in tenders:
             for other_tender in tenders:
                 if tender["Tender_ID"] != other_tender["Tender_ID"]:
+                    # Check if the tenders are in the same area and local area
                     if (
                         tender["area_name"] == other_tender["area_name"] and
                         tender["local_area_name"] == other_tender["local_area_name"]
@@ -47,30 +50,28 @@ async def check_clashes(request: PincodeRequest):
                         )
                         if overlap_days > 0:
                             priority_issue = is_priority_issue(tender["Tender_By_Department"], other_tender["Tender_By_Department"])
-                            
-                            clash_detail = ClashDetails(
-                                tender_id=tender["Tender_ID"],
-                                clashing_tender_id=other_tender["Tender_ID"],
-                                department=tender["Tender_By_Department"],
-                                clashing_department=other_tender["Tender_By_Department"],
-                                tender_start_date=tender["Sanction_Date"].strftime("%Y-%m-%d"),
-                                tender_end_date=tender["Completion_Date"].strftime("%Y-%m-%d"),
-                                clashing_tender_start_date=other_tender["Sanction_Date"].strftime("%Y-%m-%d"),
-                                clashing_tender_end_date=other_tender["Completion_Date"].strftime("%Y-%m-%d"),
-                                overlap_days=overlap_days,
-                                priority_issue=priority_issue
-                            )
+                            # Only add the clash to the list if there's a priority issue
+                            if priority_issue:
+                                clashes.append(ClashDetails(
+                                    tender_id=tender["Tender_ID"],
+                                    clashing_tender_id=other_tender["Tender_ID"],
+                                    overlap_days=overlap_days,
+                                    priority_issue=priority_issue
+                                ))
 
-                            clashes.append(clash_detail)
-
-        logging.debug(f"Detected clashes: {clashes}")
+        logging.debug(f"Detected clashes with priority issues: {clashes}")
 
         suggestions = []
+        # Only generate suggestions for clashes that have a priority issue
         for clash in clashes:
             if clash.priority_issue:
                 suggestions.append(
                     f"Reorder work: {clash.clashing_tender_id} should precede {clash.tender_id} based on department priority."
                 )
+
+        # If there are no priority clashes, we can return an empty suggestions list
+        if not clashes:
+            suggestions.append("No priority clashes detected. No suggestions necessary.")
 
         return {"clashes": clashes, "suggestions": suggestions}
     
