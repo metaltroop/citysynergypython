@@ -43,7 +43,7 @@ async def check_clashes(request: PincodeRequest):
                             other_tender["Sanction_Date"], other_tender["Completion_Date"]
                         )
                         if overlap_days > 0:
-                            priority_issue = is_priority_issue(tender["department"], other_tender["department"])
+                            priority_issue = is_priority_issue(tender["Tender_By_Department"], other_tender["Tender_By_Department"])
                             clashes.append(ClashDetails(
                                 tender_id=tender["Tender_ID"],
                                 clashing_tender_id=other_tender["Tender_ID"],
