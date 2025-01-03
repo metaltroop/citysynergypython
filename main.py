@@ -1,5 +1,5 @@
 # main.py
-
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, HTTPException
 from models import PincodeRequest, ClashResponse, ClashDetails
 from db import fetch_tenders_by_pincode
@@ -7,6 +7,14 @@ from datetime import datetime
 import logging
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # This allows all origins (from any domain)
+    allow_credentials=True,
+    allow_methods=["*"],  # Allow all HTTP methods
+    allow_headers=["*"],  # Allow all headers
+)
 
 @app.get("/")
 def root():
