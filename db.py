@@ -2,6 +2,7 @@ import mysql.connector
 import os
 from dotenv import load_dotenv
 from typing import List, Dict, Union
+import logging
 
 load_dotenv()
 
@@ -14,6 +15,8 @@ def get_db_connection():
         ssl_ca='./DigiCertGlobalRootCA.crt.pem',
         ssl_disabled=False
     )
+    print("Connected to database successfully")
+
 
 def fetch_tenders_by_pincode(pincode: str) -> List[Dict[str, Union[str, int]]]:
     try:
@@ -28,7 +31,8 @@ def fetch_tenders_by_pincode(pincode: str) -> List[Dict[str, Union[str, int]]]:
         result = cursor.fetchall()
         return result
     except mysql.connector.Error as err:
-        raise Exception(f"Database error: {err}")
+        logging.error(f"Database error: {err}")
+        raise Exception("Database connection or query error")
     finally:
         if 'connection' in locals() and connection.is_connected():
             cursor.close()
