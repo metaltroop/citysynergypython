@@ -2,9 +2,11 @@ from fastapi import FastAPI, HTTPException
 from models import PincodeRequest, ClashResponse, ClashDetails
 from db import fetch_tenders_by_pincode
 from datetime import datetime, date
-from typing import List
+import logging
 
 app = FastAPI()
+
+logging.basicConfig(level=logging.DEBUG)
 
 def calculate_date_overlap(start1, end1, start2, end2):
     # Calculate overlapping days
@@ -21,15 +23,14 @@ def is_priority_issue(dept1, dept2):
 @app.post("/check_clashes", response_model=ClashResponse)
 async def check_clashes(request: PincodeRequest):
     try:
-        # Fetch tenders in the same pincode
+        logging.debug(f"Received request for pincode: {request.pincode}")
         tenders = fetch_tenders_by_pincode(request.pincode)
+        logging.debug(f"Fetched tenders: {tenders}")
 
-        # Narrow down clashes
         clashes = []
         for tender in tenders:
             for other_tender in tenders:
                 if tender["Tender_ID"] != other_tender["Tender_ID"]:
-                    # Step-by-step checks
                     if (
                         tender["area_name"] == other_tender["area_name"] and
                         tender["local_area_name"] == other_tender["local_area_name"]
@@ -47,7 +48,8 @@ async def check_clashes(request: PincodeRequest):
                                 priority_issue=priority_issue
                             ))
 
-        # Generate Suggestions
+        logging.debug(f"Detected clashes: {clashes}")
+
         suggestions = []
         for clash in clashes:
             if clash.priority_issue:
@@ -57,4 +59,5 @@ async def check_clashes(request: PincodeRequest):
 
         return {"clashes": clashes, "suggestions": suggestions}
     except Exception as e:
+        logging.error(f"Error processing request: {e}")
         raise HTTPException(status_code=500, detail=str(e))
