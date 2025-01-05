@@ -31,7 +31,7 @@ def calculate_date_overlap(start1, end1, start2, end2):
 
 def is_priority_issue(dept1, dept2):
     # Define priority order: Water Pipeline > Roadways > Street Lighting
-    priority_order = ["Water Supply and Sewerage Board", "Urban Transport Planning Authorities", "Electricity Department"]
+    priority_order = ["Department of Water Pipeline", "Department of Roadways", "Department of Street Lighting"]
     return priority_order.index(dept1) > priority_order.index(dept2)
 
 @app.post("/check_clashes", response_model=ClashResponse)
