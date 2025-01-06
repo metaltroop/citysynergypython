@@ -104,28 +104,29 @@ async def check_clashes(request: PincodeRequest):
                                 other_tender["Tender_By_Department"]
                             )
 
-                            # Group clashes by local_area_name
-                            local_area_clashes = clashes_by_local_area.setdefault(tender["local_area_name"], [])
-                            local_area_clashes.append(ClashDetails(
-                                tender_id=tender["Tender_ID"],
-                                clashing_tender_id=other_tender["Tender_ID"],
-                                area_name=tender["area_name"],
-                                local_area_name=tender["local_area_name"],
-                                overlap_days=overlap_days,
-                                priority_issue=priority_issue,
-                                department=tender["Tender_By_Department"],
-                                clashing_department=other_tender["Tender_By_Department"],
-                                tender_start_date=tender["Sanction_Date"].isoformat(),
-                                tender_end_date=tender["Completion_Date"].isoformat(),
-                                clashing_tender_start_date=other_tender["Sanction_Date"].isoformat(),
-                                clashing_tender_end_date=other_tender["Completion_Date"].isoformat()
-                            ))
+                            # Add to clashes only if there's a priority issue
+                            if priority_issue:
+                                local_area_clashes = clashes_by_local_area.setdefault(tender["local_area_name"], [])
+                                local_area_clashes.append(ClashDetails(
+                                    tender_id=tender["Tender_ID"],
+                                    clashing_tender_id=other_tender["Tender_ID"],
+                                    area_name=tender["area_name"],
+                                    local_area_name=tender["local_area_name"],
+                                    overlap_days=overlap_days,
+                                    priority_issue=priority_issue,
+                                    department=tender["Tender_By_Department"],
+                                    clashing_department=other_tender["Tender_By_Department"],
+                                    tender_start_date=tender["Sanction_Date"].isoformat(),
+                                    tender_end_date=tender["Completion_Date"].isoformat(),
+                                    clashing_tender_start_date=other_tender["Sanction_Date"].isoformat(),
+                                    clashing_tender_end_date=other_tender["Completion_Date"].isoformat()
+                                ))
 
         # Generate suggestions
         suggestions = generate_suggestions(clashes_by_local_area)
 
         # If no clashes, add a generic suggestion
-        if not suggestions:
+        if not clashes_by_local_area:
             suggestions.append("No priority clashes detected. No suggestions necessary.")
 
         return {"clashes_by_local_area": clashes_by_local_area, "suggestions": suggestions}
