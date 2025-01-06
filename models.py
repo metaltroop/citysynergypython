@@ -2,6 +2,7 @@
 
 from pydantic import BaseModel
 from typing import List
+from typing import Dict
 
 class PincodeRequest(BaseModel):
     pincode: str
@@ -19,5 +20,5 @@ class ClashDetails(BaseModel):
     priority_issue: bool
 
 class ClashResponse(BaseModel):
-    clashes: List[ClashDetails]
+    clashes_by_local_area: Dict[str, List[ClashDetails]]  # Grouped by local_area_name
     suggestions: List[str]

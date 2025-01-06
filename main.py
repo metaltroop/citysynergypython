@@ -41,12 +41,13 @@ async def check_clashes(request: PincodeRequest):
         tenders = fetch_tenders_by_pincode(request.pincode)
         logging.debug(f"Fetched tenders: {tenders}")
 
-        clashes = []
-        # Iterate through each pair of tenders to find clashes
+        clashes_by_local_area = {}
+        
+        # Iterate through tenders to find clashes grouped by local_area_name
         for tender in tenders:
             for other_tender in tenders:
                 if tender["Tender_ID"] != other_tender["Tender_ID"]:
-                    # Check if the tenders are in the same area and local area
+                    # Check if the tenders are in the same area, local area, and have date overlap
                     if (
                         tender["area_name"] == other_tender["area_name"] and
                         tender["local_area_name"] == other_tender["local_area_name"]
@@ -57,36 +58,37 @@ async def check_clashes(request: PincodeRequest):
                         )
                         if overlap_days > 0:
                             priority_issue = is_priority_issue(tender["Tender_By_Department"], other_tender["Tender_By_Department"])
-                            # Only add the clash to the list if there's a priority issue
-                            if priority_issue:
-                                clashes.append(ClashDetails(
-                                    tender_id=tender["Tender_ID"],
-                                    clashing_tender_id=other_tender["Tender_ID"],
-                                    overlap_days=overlap_days,
-                                    priority_issue=priority_issue,
-                                    department=tender["Tender_By_Department"],
-                                    clashing_department=other_tender["Tender_By_Department"],
-                                    tender_start_date=tender["Sanction_Date"].isoformat(),
-                                    tender_end_date=tender["Completion_Date"].isoformat(),
-                                    clashing_tender_start_date=other_tender["Sanction_Date"].isoformat(),
-                                    clashing_tender_end_date=other_tender["Completion_Date"].isoformat()
-                                ))
+                            # Group clashes by local_area_name
+                            local_area_clashes = clashes_by_local_area.setdefault(tender["local_area_name"], [])
+                            local_area_clashes.append(ClashDetails(
+                                tender_id=tender["Tender_ID"],
+                                clashing_tender_id=other_tender["Tender_ID"],
+                                area_name=tender["area_name"],
+                                local_area_name=tender["local_area_name"],
+                                overlap_days=overlap_days,
+                                priority_issue=priority_issue,
+                                department=tender["Tender_By_Department"],
+                                clashing_department=other_tender["Tender_By_Department"],
+                                tender_start_date=tender["Sanction_Date"].isoformat(),
+                                tender_end_date=tender["Completion_Date"].isoformat(),
+                                clashing_tender_start_date=other_tender["Sanction_Date"].isoformat(),
+                                clashing_tender_end_date=other_tender["Completion_Date"].isoformat()
+                            ))
 
-        logging.debug(f"Detected clashes with priority issues: {clashes}")
-
+        # Generate suggestions for each local area
         suggestions = []
-        # Only generate suggestions for clashes that have a priority issue
-        for clash in clashes:
-            if clash.priority_issue:
-                suggestions.append(
-                    f"Reorder work: {clash.clashing_tender_id} should precede {clash.tender_id} based on department priority."
-                )
+        for local_area, clashes in clashes_by_local_area.items():
+            for clash in clashes:
+                if clash.priority_issue:
+                    suggestions.append(
+                        f"In {local_area}, reorder work: {clash.clashing_tender_id} should precede {clash.tender_id} based on department priority."
+                    )
 
-        # If there are no priority clashes, we can return an empty suggestions list
-        if not clashes:
+        # If no clashes, add a generic suggestion
+        if not clashes_by_local_area:
             suggestions.append("No priority clashes detected. No suggestions necessary.")
 
-        return {"clashes": clashes, "suggestions": suggestions}
+        return {"clashes_by_local_area": clashes_by_local_area, "suggestions": suggestions}
     
     except Exception as e:
         logging.error(f"Error processing request: {e}")
