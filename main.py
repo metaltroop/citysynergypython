@@ -42,7 +42,8 @@ async def check_clashes(request: PincodeRequest):
         logging.debug(f"Fetched tenders: {tenders}")
 
         clashes_by_local_area = {}
-        
+        suggestions_by_local_area = {}
+
         # Iterate through tenders to find clashes grouped by local_area_name
         for tender in tenders:
             for other_tender in tenders:
@@ -76,20 +77,27 @@ async def check_clashes(request: PincodeRequest):
                             ))
 
         # Generate suggestions for each local area
-        suggestions = []
         for local_area, clashes in clashes_by_local_area.items():
+            priority_clashes = []
             for clash in clashes:
                 if clash.priority_issue:
-                    suggestions.append(
-                        f"In {local_area}, reorder work: {clash.clashing_tender_id} should precede {clash.tender_id} based on department priority."
-                    )
+                    # Add to sequence format for priority clashes
+                    priority_clashes.append((clash.tender_id, clash.clashing_tender_id))
+
+            # Create sequence suggestion for priority clashes
+            if priority_clashes:
+                sequence = " -> ".join(set(" -> ".join(pair) for pair in priority_clashes))
+                suggestions_by_local_area[local_area] = f"In {local_area}, reorder work as follows: {sequence}."
+
+        # Compile suggestions into a list
+        suggestions = list(suggestions_by_local_area.values())
 
         # If no clashes, add a generic suggestion
-        if not clashes_by_local_area:
+        if not suggestions:
             suggestions.append("No priority clashes detected. No suggestions necessary.")
 
         return {"clashes_by_local_area": clashes_by_local_area, "suggestions": suggestions}
-    
+
     except Exception as e:
         logging.error(f"Error processing request: {e}")
         raise HTTPException(status_code=500, detail=str(e))
