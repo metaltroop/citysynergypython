@@ -138,7 +138,7 @@ async def check_clashes(request: PincodeRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 # New PING Endpoint to Receive Pings from Node.js
-@app.post("/ping")
+@app.get("/ping")
 async def receive_ping(request: Request):
     try:
         body = await request.json()
