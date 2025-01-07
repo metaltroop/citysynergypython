@@ -151,7 +151,7 @@ async def receive_ping(request: Request):
 # Background task for periodic PING to Node.js
 
 async def ping_node_server():
-    url = "https://citysynergybackend.onrender.com/ping"
+    url = "https://citysynergybackend-jw8z.onrender.com/ping"
     async with httpx.AsyncClient() as client:
         while True:
             try:
