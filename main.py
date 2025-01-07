@@ -138,7 +138,7 @@ async def check_clashes(request: PincodeRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 # New PING Endpoint to Receive Pings from Node.js
-@app.get("/ping")
+@app.post("/ping")
 async def receive_ping(request: Request):
     try:
         body = await request.json()
@@ -147,8 +147,9 @@ async def receive_ping(request: Request):
     except Exception as e:
         logging.error(f"Error processing PING request: {str(e)}")
         raise HTTPException(status_code=500, detail="Error processing PING request")
-
+    
 # Background task for periodic PING to Node.js
+
 async def ping_node_server():
     url = "https://citysynergybackend.onrender.com/ping"
     async with httpx.AsyncClient() as client:
