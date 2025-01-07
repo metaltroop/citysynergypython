@@ -1,9 +1,11 @@
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from models import PincodeRequest, ClashResponse, ClashDetails
 from db import fetch_tenders_by_pincode
 from datetime import datetime
 import logging
+import asyncio
+import httpx
 
 app = FastAPI()
 
@@ -134,3 +136,31 @@ async def check_clashes(request: PincodeRequest):
     except Exception as e:
         logging.error(f"Error processing request: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+# New PING Endpoint to Receive Pings from Node.js
+@app.post("/ping")
+async def receive_ping(request: Request):
+    try:
+        body = await request.json()
+        logging.info(f"Received PING from Node.js server: {body}")
+        return {"status": "success", "message": "PING received from Node.js server"}
+    except Exception as e:
+        logging.error(f"Error processing PING request: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error processing PING request")
+
+# Background task for periodic PING to Node.js
+async def ping_node_server():
+    url = "https://citysynergybackend.onrender.com/ping"
+    async with httpx.AsyncClient() as client:
+        while True:
+            try:
+                response = await client.get(url)
+                logging.info(f"[PING] Node.js server responded: {response.json().get('message', 'Success')}")
+            except Exception as e:
+                logging.error(f"[PING] Error pinging Node.js server: {str(e)}")
+            await asyncio.sleep(600)  # Wait 10 minutes (600 seconds)
+
+# Run the periodic PING task
+@app.on_event("startup")
+async def startup_event():
+    asyncio.create_task(ping_node_server())
